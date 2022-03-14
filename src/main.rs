@@ -83,7 +83,6 @@ fn generate_data<'a>(words_list: Vec<&'a str>, word_size: usize) {
     println!("word, entropy");
     for g in words.iter() {
         let mut entropy = 0.0;
-        // println!("patern matching for '{}'", g);
         for p in (0..word_size)
             .map(|_| {
                 [
@@ -100,15 +99,8 @@ fn generate_data<'a>(words_list: Vec<&'a str>, word_size: usize) {
                 continue;
             }
             let prob = matching_count / total_words;
-            entropy += -(prob * prob.log2())
-            // println!(
-            //     "    {} {:?} {}",
-            //     g,
-            //     p,
-            //     matching_count
-            // );
+            entropy += -(prob * prob.log2());
         }
-        // println!("word entropy for '{}' : {}", g, entropy);
         println!("{}, {}", g, entropy);
     }
 }
@@ -141,7 +133,7 @@ fn generate_data2<'a>(words_list: Vec<&'a str>, word_size: usize, first_letter: 
                 continue;
             }
             let prob = matching_count / total_words;
-            entropy += -(prob * prob.log2())
+            entropy += -(prob * prob.log2());
         }
         println!("{}, {}", g, entropy);
     }
@@ -157,17 +149,15 @@ fn play<'a>(
         .into_iter()
         .filter(|w| w.chars().count() == word_size && w.chars().nth(0) == Some(first_letter))
         .collect();
-    
 
     let mut words_remaining: Vec<&&str> = words.iter().filter(|w| first_guess.r#match(w)).collect();
 
     let mut total_words = words_remaining.len() as f64;
 
-    let mut best_entropy: f64 = 0.0;
-
     while total_words as usize != 1 {
         assert!(total_words as usize != 0);
         let mut bests = Vec::new();
+        let mut best_entropy: f64 = 0.0;
         for g in words.iter() {
             let mut entropy = 0.0;
             for p in (0..word_size - 1)
@@ -212,7 +202,10 @@ fn play<'a>(
 
         let new_guess = GuessResult::init(&nexts_guess, into_correctness(&pattern));
 
-        words_remaining = words_remaining.into_iter().filter(|w| new_guess.r#match(w)).collect();
+        words_remaining = words_remaining
+            .into_iter()
+            .filter(|w| new_guess.r#match(w))
+            .collect();
 
         total_words = words_remaining.len() as f64;
     }
@@ -231,15 +224,13 @@ fn display_match<'a>(
     words.collect()
 }
 
-const ans: &str = "LABORIEUX";
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     let args = &args[1..];
     let char_len = args[0].parse::<usize>().unwrap();
     let first_letter = args[1].parse::<char>().unwrap();
-    // let first_guess = args[2].parse::<String>().unwrap();
-    // let first_mask = args[3].parse::<String>().unwrap();
+    let first_guess = args[2].parse::<String>().unwrap();
+    let first_mask = args[3].parse::<String>().unwrap();
 
     let filename = "data/dict.txt";
     let file_content = fs::read_to_string(filename)
@@ -247,23 +238,10 @@ fn main() {
         .to_lowercase();
     let words_list = file_content.split("\n").collect();
 
-    // generate_data(char_len);
-    generate_data2(
+    play(
         words_list,
         char_len,
-        first_letter
+        first_letter,
+        GuessResult::init(&first_guess, into_correctness(&first_mask)),
     );
-    // let matches = display_match(
-    //     words_list,
-    //     char_len,
-    //     first_letter,
-    //     GuessResult::init(
-    //         "langouste",
-    //         into_correctness("CCAAMMAAM"),
-    //     ),
-    // );
-
-    // for w in matches {
-    //     println!("{}", w);
-    // }
 }
